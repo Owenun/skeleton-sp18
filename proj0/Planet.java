@@ -30,7 +30,6 @@ public class Planet {
     }
 
     public double calcForceExertedBy(Planet p) {
-        if (p.equals(this)) throw new RuntimeException();
 
         final double G = 6.67 * Math.pow(10, -11);
 
@@ -60,6 +59,7 @@ public class Planet {
     public double calcNetForceExertedByX(Planet[] planets) {
         double netForceX = 0;
         for (Planet p: planets) {
+            if (p.equals(this)) continue;
             netForceX += this.calcForceExertedByX(p);
         }
         return netForceX;
@@ -67,6 +67,7 @@ public class Planet {
     public double calcNetForceExertedByY(Planet[] planets) {
         double netForceY = 0;
         for (Planet p: planets) {
+            if (p.equals(this)) continue;
             netForceY += this.calcForceExertedByY(p);
         }
         return netForceY;
@@ -78,12 +79,16 @@ public class Planet {
         double ax = forceX / this.mass;
         double ay = forceY / this.mass;
 
-        this.xxVel = ax * dt + this.xxVel;
-        this.yyVel = ay * dt + this.yyVel;
+        xxVel = ax * dt + xxVel;
+        yyVel = ay * dt + yyVel;
 
-        this.xxPos += this.xxVel * dt;
-        this.yyPos += this.yyVel * dt;
+        xxPos += xxVel * dt;
+        yyPos += yyVel * dt;
 
+    }
+
+    public void draw() {
+        StdDraw.picture(this.xxPos, this.yyPos, this.imgFileName);
     }
 
 
