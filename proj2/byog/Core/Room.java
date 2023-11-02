@@ -7,6 +7,7 @@ public class Room {
 
     public final int width;
     public final int height;
+    public final int area;
     public final int leftX;
     public final int DownY;
     public final double centerX;
@@ -17,6 +18,7 @@ public class Room {
     public Room(int width, int height, int leftX, int DownY) {
         this.width = width;
         this.height = height;
+        this.area = width * height;
         this.leftX = leftX;
         this.DownY = DownY;
         this.boundary = new int[]{leftX, leftX + width -1, DownY, DownY + height - 1};
@@ -51,6 +53,13 @@ public class Room {
             }
         }
         return true;
+    }
+
+    public static boolean inWorld(Room room) {
+        if (room.boundary[1] >= Game.WIDTH || room.boundary[0] <= 0) {
+            return false;
+        }
+        return room.boundary[2] > 0 && room.boundary[3] < Game.HEIGHT;
     }
 
     public  Point2D.Double[] linkPosWithOtherRoom( Room otherRoom) {
@@ -168,16 +177,16 @@ public class Room {
                 if (centA >= centB) {
                     break;
                 }
-                if (centA < bouA) {
+                if (centA < bouA - 1) {
                     centA++;
                 }
                 if (centA >= centB) {
                     break;
                 }
-                if (centB > bouB){
+                if (centB > bouB + 1){
                     centB--;
                 }
-                if (centB <= bouB && centA >= bouA ) {
+                if (centB <= bouB + 1 && centA >= bouA - 1 ) {
                     break;
                 }
             }
@@ -185,26 +194,23 @@ public class Room {
             int bouA = bouAs[1];
             int bouB = bouBs[0];
             while(true) {
-                if (centA < centB) {
+                if (centA <= centB) {
                     break;
                 }
-                if (centA > bouA) {
+                if (centA > bouA + 1) {
                     centA--;
                 }
-                if(centA < centB) {
+                if(centA <= centB) {
                     break;
                 }
-                if (centB > bouB) {
+                if (centB > bouB - 1) {
                     centB++;
                 }
-                if (centA <= bouA && centB >= bouB) {
+                if (centA <= bouA + 1 && centB >= bouB - 1) {
                     break;
                 }
             }
         }
         return new int[] {centA, centB};
-
         }
-
-
 }

@@ -6,10 +6,7 @@ import byog.TileEngine.Tileset;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Timer;
+import java.util.*;
 
 import static java.lang.Thread.sleep;
 
@@ -19,9 +16,12 @@ public class Game {
     /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
     public static final int HEIGHT = 40;
+    public static final int AREA = WIDTH * HEIGHT;
+    public long seed;
+    public Random random;
     public String[][] buffer;
     public TETile[][] finalWordFrame;
-   public HashMap<String, TETile> BufferCharMap;
+    public HashMap<String, TETile> BufferCharMap;
 
 
    public Game(){
@@ -31,6 +31,8 @@ public class Game {
        finalWordFrame = new TETile[WIDTH][HEIGHT];
        BufferCharMap = new HashMap<>(10);
        buffer = new String[WIDTH][HEIGHT];
+       seed = 10000;
+       random = new Random(seed);
 
        for(int i = 0; i < WIDTH; i++) {
            for (int j = 0; j < HEIGHT; j++) {
@@ -72,12 +74,94 @@ public class Game {
 
     public TETile[][]  playNow() throws InterruptedException {
 
-        ArrayList<Room> roomSet = createRomes();
+        ArrayList<Room> roomSet = createRandomRomes();
         addRomeToBuffer(roomSet);
-//        sortRomes(roomSet);
+//        arrangeLinkOrderRomes(roomSet);
         createHallBetRomes(roomSet);
         bufferToFinalWordFrame(finalWordFrame);
         return finalWordFrame;
+    }
+
+
+
+    public ArrayList<Room> createRandomRomes() {
+
+        /* there are a few limits for random rooms
+        * Width and Height must bigger than 2 bur less than certain limit
+        * one room can't crash  with another
+        * rooms must in the word which means rooms can't over the boundary of the word
+        * same random seed create same room group
+        * */
+
+        ArrayList<Room> roomSet = new ArrayList<>();
+        int curArea = 0;
+        while (curArea < AREA / 2 ){
+            Room newRoom = createOneRoom();
+
+            boolean roomInWord = Room.inWorld(newRoom);
+            if (!roomInWord) continue;
+
+            boolean notCrash = true;
+            for (Room room: roomSet) {
+
+                notCrash = Room.checkRomeCrashed(room, newRoom);
+                if (!notCrash) break;
+            }
+            if (notCrash) {
+                roomSet.add(newRoom);
+                curArea += newRoom.area;
+            }
+        }
+        return roomSet;
+//        Room r2 = new Room(10, 10 , 20, 25);
+//        Room r1 = new Room(10, 10, 20, 10);
+//        Room r3 = new Room(10, 10 , 50, 10);
+//        Room r4 = new Room(10, 10 , 65, 24);
+//
+//        roomSet.add(r2);
+//        roomSet.add(r1);
+//        roomSet.add(r3);
+//        roomSet.add(r4);
+    }
+
+    public Room createOneRoom() {
+        int[] posElements = new int[4];
+        int i = 0;
+        while (i < 2) {
+            int a = random.nextInt(16);
+            if (a > 2) {
+                posElements[i] = a;
+                i++;
+            }
+        }
+        while (i < 3) {
+            int a = random.nextInt();
+            if (0 < a && a < WIDTH - posElements[0]) {
+                posElements[i] = a;
+                i++;
+            }
+        }
+        while (i < 4) {
+            int a = random.nextInt();
+            if (0 < a && a < HEIGHT - posElements[1]) {
+                posElements[i] = a;
+                i++;
+            }
+        }
+        int width = posElements[0];
+        int height = posElements[1];
+        int leftX = posElements[2];
+        int downY = posElements[3];
+        return new Room(width, height, leftX, downY);
+    }
+
+    /** roomSet: the room group which need to give link order
+     *  return:  ArrayList<Room[]>  the element in the Arraylist are two room which need to be linked. */
+    public void arrangeLinkOrderRooms() {
+
+
+
+
     }
 
     public void addRomeToBuffer(ArrayList<Room> roomSet) {
@@ -88,6 +172,7 @@ public class Game {
             drawLine(room.boundary[2], room.boundary[3], room.boundary[1], "X");
         }
     }
+
     public void drawLine(int start, int end, int keep, String tag) {
         if (tag.equals("X")) {
             while (start <= end) {
@@ -106,37 +191,24 @@ public class Game {
     public void bufferToFinalWordFrame(TETile[][] finalWordFrame) throws InterruptedException {
 
         /* test here*/
-        for (int i = 0; i < WIDTH; i++) {
-            for (int j = 0; j < HEIGHT; j++) {
-                finalWordFrame[i][j] = Tileset.NOTHING;
-            }
-        }
-        ter.renderFrame(finalWordFrame);
+//        for (int i = 0; i < WIDTH; i++) {
+//            for (int j = 0; j < HEIGHT; j++) {
+//                finalWordFrame[i][j] = Tileset.NOTHING;
+//            }
+//        }
+//        ter.renderFrame(finalWordFrame);
         /* test above */
 
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < HEIGHT; j++) {
                 TETile t = BufferCharMap.get(buffer[i][j]);
                 finalWordFrame[i][j] = t;
-                ter.renderFrame(finalWordFrame);
-                sleep(5);
+//                ter.renderFrame(finalWordFrame);
+//                sleep(1);
             }
         }
     }
 
-
-    public ArrayList<Room> createRomes() {
-
-        ArrayList<Room> roomSet = new ArrayList<>();
-
-        Room r1 = new Room(10, 10, 30, 15);
-        Room r2 = new Room(10, 10 , 50, 15);
-//
-        roomSet.add(r1);
-        roomSet.add(r2);
-        return roomSet;
-
-    }
 
     public  void createHallBetRomes(ArrayList<Room> roomSet) {
         int i = 0;

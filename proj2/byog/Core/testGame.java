@@ -22,7 +22,7 @@ public class testGame {
 
     @Test
     public void testCreateRooms(){
-        ArrayList<Room> roomSet = game.createRomes();
+        ArrayList<Room> roomSet = game.createRandomRomes();
 
         assertEquals(" ", 2, roomSet.size());
 
@@ -32,7 +32,7 @@ public class testGame {
     @Test
     public void testAddRoomToBuffer(){
 
-        ArrayList<Room> roomSet = game.createRomes();
+        ArrayList<Room> roomSet = game.createRandomRomes();
 
         game.addRomeToBuffer(roomSet);
 
@@ -47,7 +47,7 @@ public class testGame {
     @Test
     public void testBufferToFinalWorld() throws InterruptedException {
 
-        ArrayList<Room> roomSet = game.createRomes();
+        ArrayList<Room> roomSet = game.createRandomRomes();
 
 
         game.addRomeToBuffer(roomSet);
