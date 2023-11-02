@@ -35,23 +35,40 @@ public class Room {
 
     /* static method to check whether two rooms crash or not
     * crash return false or return true */
-    public static boolean checkRomeCrashed(Room room1, Room room2)  {
-        boolean room1ToRoom2 = checkRomeCrashedHelper(room1, room2);
-        if (!room1ToRoom2) {
-            return false;
-        }
-        return checkRomeCrashedHelper(room2, room1);
-
+    public boolean checkRomeNotCrash(Room room)  {
+        if (checkCornerInRoom(room)) return false;
+        if (checkMiddleInRoom(room)) return false;
+        return true;
     }
 
-    private static boolean checkRomeCrashedHelper(Room room1, Room room2) {
-        for (int[] cornerPos : room2.corPoses) {
-            if (room1.boundary[0] <=  cornerPos[0] && cornerPos[0] <= room1.boundary[1] ) {
-                if ( room1.boundary[2] <= cornerPos[1] && room1.boundary[3] >= cornerPos[1]) {
-                    return false;
-                }
-            }
+    private boolean checkCornerInRoom(Room room) {
+        for (int[] cornerPos : room.corPoses) {
+            if (checkPosInRoom(cornerPos)) return true;
         }
+        return false;
+    }
+    public boolean checkMiddleInRoom(Room room) {
+
+        int x = (int) room.centerX;
+        int y = (int) room.centerY;
+        int startX = room.boundary[0];
+        int startY = room.boundary[2];
+        while (startX <= room.boundary[1]) {
+            int[] pos = {startX, y};
+            if (checkPosInRoom(pos)) return true;
+            startX++;
+        }
+        while( startY <= room.boundary[3]){
+            int[] pos = {x, startY};
+            if (checkPosInRoom(pos)) return true;
+            startY++;
+        }
+        return false;
+    }
+
+    public boolean checkPosInRoom(int[] pos) {
+        if (boundary[0] > pos[0] || pos[0] > boundary[1]) return false;
+        if (boundary[2] > pos[1] || pos[1] > boundary[3]) return false;
         return true;
     }
 
