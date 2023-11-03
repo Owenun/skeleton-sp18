@@ -3,12 +3,15 @@ package byog.Core;
 import byog.TileEngine.TERenderer;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
-
+import edu.princeton.cs.algs4.Picture;
 
 
 import java.awt.geom.Point2D;
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Level;
+
+import static java.lang.Thread.sleep;
 
 
 public class Game {
@@ -42,6 +45,7 @@ public class Game {
 
        BufferCharMap.put(" ", Tileset.NOTHING);
        BufferCharMap.put("#", Tileset.WALL);
+       BufferCharMap.put("·", Tileset.FLOOR);
 
    }
 
@@ -71,10 +75,11 @@ public class Game {
         return null;
     }
 
-    public TETile[][]  playNow()  {
+    public TETile[][]  playNow() throws InterruptedException {
 
         ArrayList<Room> roomSet = createRandomRomes();
         addRomeToBuffer(roomSet);
+
         ArrayList<Room[]> roomPairInOrder =  arrangeLinkOrderRomes(roomSet);
         createHallBetRomes(roomPairInOrder);
         bufferToFinalWordFrame(finalWordFrame);
@@ -102,27 +107,28 @@ public class Game {
         *  */
 
         ArrayList<Room[]> arrangeRoomPairs = new ArrayList<>();
-        roomSet.sort((o1, o2) -> (int) (o1.centerX - o2.centerY));
+        roomSet.sort((o1, o2) -> (int) (o1.centerX - o2.centerX));
         ArrayList<Room> originGroup = new ArrayList<>();
         int middleIndex = (roomSet.size() - 1) / 2;
         Room middleRoom = roomSet.get(middleIndex);
         originGroup.add(middleRoom);
-        ArrayList<Room> leftRooms = (ArrayList<Room>) roomSet.subList(0, middleIndex);
-        ArrayList<Room> rightRooms = (ArrayList<Room>) roomSet.subList(middleIndex + 1, roomSet.size());
-
-        for (Room room : leftRooms) {
-            if(room.boundary[1] >= middleRoom.boundary[0]) {
-                originGroup.add(room);
-                leftRooms.remove(room);
-
-            }
+        ArrayList<Room> leftRooms = new ArrayList<>();
+        ArrayList<Room> rightRooms = new ArrayList<>();
+        int i = 0;
+        while ( i < middleIndex ) {
+            leftRooms.add(roomSet.get(i));
+            i++;
         }
-        for ( Room room : rightRooms) {
-            if ( room.boundary[0] <= middleRoom.boundary[1]){
-                originGroup.add(room);
-                rightRooms.remove(room);
-            }
+        i++;
+        while (i < roomSet.size()) {
+            rightRooms.add(roomSet.get(i));
+            i++;
         }
+//        ArrayList<Room> rightRooms = (ArrayList<Room>) roomSet.subList(middleIndex + 1, roomSet.size());
+
+        addRoomToGroup(leftRooms,originGroup, middleRoom, 1);
+
+        addRoomToGroup( rightRooms,originGroup, middleRoom, 2);
 
         originGroup.sort((o1, o2) -> (int) (o1.centerY - o2.centerY));
 
@@ -131,36 +137,54 @@ public class Game {
         ArrayList<Room> group1 = new ArrayList<>(originGroup);
         ArrayList<Room> group2 = new ArrayList<>(originGroup);
 
-        while (leftRooms.size() != 0 ) {
-            ArrayList<Room> newGroup = new ArrayList<>();
-            Room pickRoom = leftRooms.remove(leftRooms.size() - 1);
-            for (Room room : leftRooms) {
-                if (room.boundary[1] >= pickRoom.boundary[0]) {
-                    newGroup.add(room);
-                    leftRooms.remove(room);
-                }
-            }
-            groupInnerLink(newGroup, arrangeRoomPairs);
-            linkBetTwoGroup(group1, newGroup, arrangeRoomPairs);
-            group1 = newGroup;
-        }
+        linkHalfSide(leftRooms, group1, arrangeRoomPairs, 1);
 
-        while (rightRooms.size() != 0) {
-            ArrayList<Room> newGroup = new ArrayList<>();
-            Room pickRoom = leftRooms.remove(leftRooms.size() - 1);
-            for (Room room : leftRooms) {
-                if (room.boundary[0] >= pickRoom.boundary[1]) {
-                    newGroup.add(room);
-                    leftRooms.remove(room);
-                }
-            }
-            groupInnerLink(newGroup, arrangeRoomPairs);
-            linkBetTwoGroup(group2, newGroup, arrangeRoomPairs);
-            group2 = newGroup;
-        }
+        linkHalfSide(rightRooms, group2, arrangeRoomPairs, 2);
 
         return arrangeRoomPairs;
 
+    }
+   public void linkHalfSide(ArrayList<Room> halfSideRooms, ArrayList<Room> middleGroup, ArrayList<Room[]> arrangeRoomPairs, int direction) {
+       ArrayList<Room> groupR = middleGroup;
+        while(halfSideRooms.size() != 0) {
+            ArrayList<Room> newGroup = new ArrayList<>();
+            Room picRoom;
+            if (direction == 1) {
+                picRoom = halfSideRooms.remove(halfSideRooms.size() - 1);
+            } else {
+                picRoom = halfSideRooms.remove(0);
+            }
+            newGroup.add(picRoom);
+            addRoomToGroup(halfSideRooms, newGroup, picRoom, direction);
+            newGroup.sort((o1, o2) -> (int) (o1.centerY - o2.centerY));
+            groupInnerLink(newGroup, arrangeRoomPairs);
+            linkBetTwoGroup(groupR, newGroup, arrangeRoomPairs);
+            groupR = newGroup;
+        }
+    }
+    public void addRoomToGroup(ArrayList<Room> originRooms, ArrayList<Room> newRooms, Room curRoom, int direction){
+        if (direction == 1 ){ // 1 for left , 2 for right
+            for ( Room room : originRooms) {
+                if (room.boundary[1] >= curRoom.boundary[0]){
+                    newRooms.add(room);
+//                    originRooms.remove(room);
+                }
+            }
+            for (Room room: newRooms) {
+                originRooms.remove(room);
+            }
+
+        } else {
+            for ( Room room : originRooms) {
+                if (room.boundary[0] <= curRoom.boundary[1]){
+                    newRooms.add(room);
+//                    originRooms.remove(room);
+                }
+            }
+            for (Room room: newRooms) {
+                originRooms.remove(room);
+            }
+        }
     }
 
     public void linkBetTwoGroup(ArrayList<Room> group1, ArrayList<Room> group2,ArrayList<Room[]> arrangeRoomPairs) {
@@ -192,6 +216,7 @@ public class Game {
         while( i + 1< group.size()) {
             Room[] roomPair = new Room[] {group.get(i), group.get(i + 1)};
             arrangeRoomPairs.add(roomPair);
+            i++;
         }
     }
 
@@ -207,7 +232,7 @@ public class Game {
 
         ArrayList<Room> roomSet = new ArrayList<>();
         int curArea = 0;
-        while (curArea < AREA / 3 ){
+        while (curArea < ( AREA / 10) * 4  ){
             Room newRoom = createOneRoom();
 
             boolean roomInWord = Room.inWorld(newRoom);
@@ -217,6 +242,7 @@ public class Game {
             for (Room room: roomSet) {
 
                 notCrash = room.checkRomeNotCrash(newRoom);
+                notCrash = newRoom.checkRomeNotCrash(room) && notCrash;
                 if (!notCrash) break;
             }
             if (notCrash) {
@@ -232,14 +258,14 @@ public class Game {
         int i = 0;
         while (i < 1) {
             int a = random.nextInt(30);
-            if (a > 2) {
+            if (a > 4) {
                 posElements[i] = a;
                 i++;
             }
         }
         while (i < 2) {
             int a = random.nextInt(20);
-            if (a > 2) {
+            if (a > 4) {
                 posElements[i] = a;
                 i++;
             }
@@ -266,15 +292,22 @@ public class Game {
     }
 
 
-
-
-    public void addRomeToBuffer(ArrayList<Room> roomSet) {
+    public void addRomeToBuffer(ArrayList<Room> roomSet) throws InterruptedException {
         for (Room room: roomSet){
             drawLine(room.boundary[0], room.boundary[1], room.boundary[2], "Y"); // Y means keep Y not change and increase X
             drawLine(room.boundary[0], room.boundary[1], room.boundary[3], "Y");
             drawLine(room.boundary[2], room.boundary[3], room.boundary[0], "X"); // X means keep X not change while increase Y
             drawLine(room.boundary[2], room.boundary[3], room.boundary[1], "X");
+            for (int i = room.boundary[0] + 1; i < room.boundary[1]; i++) {
+                for(int j = room.boundary[2] + 1; j < room.boundary[3]; j++) {
+                    buffer[i][j] = "·";
+                }
+            }
         }
+        /* test here to see add every room directly */
+        bufferToFinalWordFrame(finalWordFrame);
+        ter.renderFrame(finalWordFrame);
+        sleep(5000);
     }
 
     public void drawLine(int start, int end, int keep, String tag) {
@@ -294,14 +327,14 @@ public class Game {
 
     public void bufferToFinalWordFrame(TETile[][] finalWordFrame)  {
 
-        /* test here*/
+//        /* test here*/
 //        for (int i = 0; i < WIDTH; i++) {
 //            for (int j = 0; j < HEIGHT; j++) {
 //                finalWordFrame[i][j] = Tileset.NOTHING;
 //            }
 //        }
 //        ter.renderFrame(finalWordFrame);
-        /* test above */
+//        /* test above */
 
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < HEIGHT; j++) {
@@ -314,7 +347,7 @@ public class Game {
     }
 
 
-    public  void createHallBetRomes(ArrayList<Room[]> arrangeRoomPairs) {
+    public  void createHallBetRomes(ArrayList<Room[]> arrangeRoomPairs) throws InterruptedException {
         for (Room[] roomPair : arrangeRoomPairs){
             Room r1 = roomPair[0];
             Room r2 = roomPair[1];
@@ -323,6 +356,11 @@ public class Game {
             side = r1.checkWitchSide(relativeDegree);
             Point2D.Double[] poses = r1.linkPosWithOtherRoom(r2);
             linkPos(side, poses[0], poses[1]);
+
+            /* test here to see every pair link directly */
+            bufferToFinalWordFrame(finalWordFrame);
+            ter.renderFrame(finalWordFrame);
+            sleep(5000);
         }
     }
 
@@ -355,12 +393,12 @@ public class Game {
         int curX = (int) pos1.getX();
         int targetX = (int) pos2.getX();
         int Y = (int) pos1.getY();
-        buffer[curX][Y] = " ";
-        buffer[targetX][Y] = " ";
+        buffer[curX][Y] = "·";
+        buffer[targetX][Y] = "·";
         curX++;
         while (curX < targetX) {
             buffer[curX][Y - 1] = "#";
-            buffer[curX][Y] = " ";
+            buffer[curX][Y] = "·";
             buffer[curX][Y + 1] = "#";
             curX++;
         }
@@ -379,12 +417,12 @@ public class Game {
         int curY = (int) pos1.getY();
         int targetY = (int) pos2.getY();
         int X = (int) pos1.getX();
-        buffer[X][curY] = " ";
-        buffer[X][targetY] = " ";
+        buffer[X][curY] = "·";
+        buffer[X][targetY] = "·";
         curY++;
         while (curY < targetY) {
             buffer[X - 1][curY] = "#";
-            buffer[X][curY] = " ";
+            buffer[X][curY] = "·";
             buffer[X + 1][curY] = "#";
             curY++;
         }
@@ -424,6 +462,6 @@ public class Game {
                 }
             }
         }
-        buffer[(int)pos.getX()][(int) pos.getY()] = " ";
+        buffer[(int)pos.getX()][(int) pos.getY()] = "·";
     }
 }

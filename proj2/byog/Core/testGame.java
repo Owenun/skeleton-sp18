@@ -30,7 +30,7 @@ public class testGame {
 
     /* test whether buffer work well or not */
     @Test
-    public void testAddRoomToBuffer(){
+    public void testAddRoomToBuffer() throws InterruptedException {
 
         ArrayList<Room> roomSet = game.createRandomRomes();
 

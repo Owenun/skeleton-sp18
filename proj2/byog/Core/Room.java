@@ -67,8 +67,8 @@ public class Room {
     }
 
     public boolean checkPosInRoom(int[] pos) {
-        if (boundary[0] > pos[0] || pos[0] > boundary[1]) return false;
-        if (boundary[2] > pos[1] || pos[1] > boundary[3]) return false;
+        if (boundary[0] + 1 > pos[0] || pos[0] > boundary[1] + 1) return false;
+        if (boundary[2] + 1 > pos[1] || pos[1] > boundary[3] + 1) return false;
         return true;
     }
 
@@ -117,7 +117,7 @@ public class Room {
             double angle = Math.toDegrees(Math.atan2(dy, dx));
             angle = angle > 0 ? angle : angle + 360;
             anglesList.add(angle);
-            // the angle add in is not in order so hava to range again
+            // the angle add in is not in order so hava to arrange again
         }
         ArrayList<Double> angles = new ArrayList<>();
         // sort the list to make angle in right order;
@@ -127,16 +127,15 @@ public class Room {
         angles.add(anglesList.get(2));
 
         int side;
-        if (0 <= relativeAngle && relativeAngle <= angles.get(0)) {
+        if ( (0 <= relativeAngle && relativeAngle <= angles.get(0))  ||  (angles.get(3) < relativeAngle &&  relativeAngle < 360)) {
             side = 0;
         } else if (angles.get(0) < relativeAngle && relativeAngle <= angles.get(1)) {
             side = 1;
         } else if (angles.get(1) < relativeAngle && relativeAngle <= angles.get(2)) {
             side = 2;
-        } else if (angles.get(2) < relativeAngle && relativeAngle <= angles.get(3)) {
-            side = 3;
         } else {
-            side = 0;
+//            angles.get(2) < relativeAngle && relativeAngle <= angles.get(3)) {
+            side = 3;
         }
         return side;
     }
@@ -152,7 +151,7 @@ public class Room {
 
         if (side == 0) {
             int[] bouAs = {boundary[3], boundary[2]};
-            int[] bouBs = {otherRoom.boundary[3],otherRoom.boundary[2]};
+            int[] bouBs = {otherRoom.boundary[3], otherRoom.boundary[2]};
             int [] poses = calLinkPosBySideHelper(dirY, otherDirY, bouAs, bouBs, (int) dirY, (int) otherDirY);
             a = new Point2D.Double(boundary[1], poses[0]);
             b = new Point2D.Double(otherRoom.boundary[0], poses[1]);
@@ -169,7 +168,7 @@ public class Room {
             int[] bouBs = {otherRoom.boundary[3],otherRoom.boundary[2]};
             int [] poses = calLinkPosBySideHelper(dirY, otherDirY, bouAs, bouBs, (int) dirY, (int) otherDirY);
             a = new Point2D.Double( boundary[0], poses[0]);
-            b = new Point2D.Double( otherRoom.boundary[0], poses[1]);
+            b = new Point2D.Double( otherRoom.boundary[1], poses[1]);
         } else {
             int[] bouAs = {boundary[1], boundary[0]};
             int[] bouBs = {otherRoom.boundary[1],otherRoom.boundary[0]};
@@ -220,7 +219,7 @@ public class Room {
                 if(centA <= centB) {
                     break;
                 }
-                if (centB > bouB - 1) {
+                if (centB < bouB - 1) {
                     centB++;
                 }
                 if (centA <= bouA + 1 && centB >= bouB - 1) {
