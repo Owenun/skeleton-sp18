@@ -4,25 +4,19 @@ import byog.TileEngine.TERenderer;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
-
-
 import java.awt.geom.Point2D;
-
+import java.io.*;
 import java.util.*;
-
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-
-
-public class Game {
+public class Game implements Serializable{
     public TERenderer ter;
-    /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
     public static final int HEIGHT = 40;
     public static final int AREA = WIDTH * HEIGHT;
+    private static final long serialVersionUID = 15498234798734234L;
     public Long Seed;
     public Random random;
     public String[][] buffer;
@@ -47,21 +41,61 @@ public class Game {
        BufferCharMap.put(" ", Tileset.NOTHING);
        BufferCharMap.put("#", Tileset.WALL);
        BufferCharMap.put("·", Tileset.FLOOR);
-
    }
 
-   public void newGame(Long seed) throws InterruptedException {
+   public static Game LoadGame(){
+       File f = new File("./game.ser");
+       try{
+           FileInputStream fs = new FileInputStream(f);
+           ObjectInputStream os = new ObjectInputStream(fs);
+           Game oldgame = (Game) os.readObject();
+           os.close();
+           return oldgame;
+       } catch (FileNotFoundException e) {
+           System.out.println("file not found");
+           System.exit(0);
+       } catch (IOException e){
+           System.exit(0);
+       } catch (ClassNotFoundException e) {
+           System.out.println("class not found");
+           System.exit(0);
+       }
+       return null;
+   }
 
-       Seed = seed;
-       StringBuilder keyboardStr = new StringBuilder();
-       random = new Random(seed);
+   @SuppressWarnings("ResultOfMethodCallIgnored")
+   public static void saveGame(Game g) {
+        File f = new File("./game.ser");
+        try {
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+            FileOutputStream fs = new FileOutputStream(f);
+            ObjectOutputStream os = new ObjectOutputStream(fs);
+            os.writeObject(g);
+            os.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("file not found");
+            System.exit(0);
+        } catch (IOException e) {
+            System.exit(0);
+        }
+    }
 
+   public void newGame(Long seed, boolean isNew) {
        boolean quit = false;
-       generateWord();
-       heroPosInitial();
+
+       if (isNew) {
+           Seed = seed;
+           random = new Random(seed);
+
+           generateWord();
+           heroPosInitial();
+       }
+
        ter.renderFrame(finalWordFrame);
        String directionCh = "wsad";
-       Character ch = ' ';
+       Character ch;
        while (!quit) {
            // main loop
 
@@ -79,7 +113,6 @@ public class Game {
                    }
                }
                if (directionCh.contains(ch.toString())) {
-                   keyboardStr.append(ch);
                    boolean NotWall = flashHeroPos(ch);
                    if (NotWall) {
                        ter.renderFrame(finalWordFrame);
@@ -97,16 +130,17 @@ public class Game {
                ter.drawPos(heroPos);
            }
        }
+       Game.saveGame(this);
        System.exit(0);
-
-//       quitAndSave();
    }
+
     public Character listenToKeyboard(){
         while(true) {
             if (!StdDraw.hasNextKeyTyped()) continue;
             return StdDraw.nextKeyTyped();
         }
     }
+
    public boolean flashHeroPos(Character ch) {
 
        HashMap<Character, int[]> moveMap = new HashMap<>();
@@ -122,14 +156,13 @@ public class Game {
            return true;
        }
        return false;
-
    }
+
    public boolean checkIfWall(int[] pos) {
        return  buffer[pos[0]][pos[1]].equals("#");
    }
 
     public void heroPosInitial() {
-
        heroPos = new int[2];
        while (true) {
        int x = random.nextInt(WIDTH);
@@ -141,19 +174,19 @@ public class Game {
         }
        }
     }
-    /**
-     * Method used for playing a fresh game. The game should start from the main menu.
-     */
-    public void playWithKeyboard() throws InterruptedException {
 
-//      draw start ui
-//      listen to keepBoard N or L
-//        new for new game, need provide seed and s begin game
-//        l for load game
+    public void playWithKeyboard() {
+
         ter.drawBeginUI(false);
         Character beginCh =  listenToKeyboard();
         if (beginCh.equals('l')) {
-//            loadGame();
+            File f = new File("./game.ser");
+            if (f.exists()) {
+                loadGame();
+            } else {
+                System.out.println("Load game file not exit ");
+                System.exit(0);
+            }
         }
         if (beginCh.equals('n')) {
             ter.drawBeginUI(true);
@@ -166,26 +199,23 @@ public class Game {
                 seed.append(ch);
             }
             seed.deleteCharAt(seed.length() - 1);
-            newGame(Long.parseLong(seed.toString()));
+            newGame(Long.parseLong(seed.toString()), true);
         }
     }
 
-    /**
-     * Method used for autograding and testing the game code. The input string will be a series
-     * of characters for example, "n123sswwdasdassadwas", "n123sss:q", "lwww". The game should
-     * behave exactly as if the user typed these characters into the game after playing
-     * playWithKeyboard. If the string ends in ":q", the same world should be returned as if the
-     * string did not end with q. For example "n123sss" and "n123sss:q" should return the same
-     * world. However, the behavior is slightly different. After playing with "n123sss:q", the game
-     * should save, and thus if we then called playWithInputString with the string "l", we'd expect
-     * to get the exact same world back again, since this corresponds to loading the saved game.
-     * @param input the input string to feed to your program
-     * @return the 2D TETile[][] representing the state of the world
-     */
-    public TETile[][] playWithInputString(String input) throws RuntimeException, InterruptedException {
-        // TODO: Fill out this method to run the game using the input passed in,
-        // and return a 2D tile representation of the world that would have been
-        // drawn if the same inputs had been given to playWithKeyboard().
+    public void loadGame() {
+        Game oldGame = Game.LoadGame();
+        this.ter = oldGame.ter;
+        this.finalWordFrame = oldGame.finalWordFrame;
+        this.random = oldGame.random;
+        this.heroPos = oldGame.heroPos;
+        this.buffer = oldGame.buffer;
+        this.Seed = oldGame.Seed;
+        newGame(Seed, false);
+    }
+
+    public TETile[][] playWithInputString(String input) throws RuntimeException {
+
         Pattern r = Pattern.compile("^([nNlL])(\\d+)([sS]|:[qQ])$");
         Matcher matcher = r.matcher(input);
         if ( !matcher.find())  throw new RuntimeException();
@@ -203,7 +233,7 @@ public class Game {
         return finalWordFrame;
     }
 
-    public void generateWord() throws InterruptedException {
+    public void generateWord() {
 
         ArrayList<Room> roomSet = createRandomRomes();
 
@@ -212,7 +242,6 @@ public class Game {
         ArrayList<Room[]> roomPairInOrder =  arrangeLinkOrderRomes(roomSet);
         createHallBetRomes(roomPairInOrder);
         bufferToFinalWordFrame(finalWordFrame);
-//        return finalWordFrame;
     }
 
     /** roomSet: the room group which need to give link order
@@ -291,6 +320,7 @@ public class Game {
             groupR = newGroup;
         }
     }
+
     public void addRoomToGroup(ArrayList<Room> originRooms, ArrayList<Room> newRooms, Room curRoom, int direction){
         if (direction == 1 ){ // 1 for left , 2 for right
             for ( Room room : originRooms) {
@@ -348,7 +378,6 @@ public class Game {
             i++;
         }
     }
-
 
     public ArrayList<Room> createRandomRomes() {
 
@@ -420,8 +449,7 @@ public class Game {
         return new Room(width, height, leftX, downY);
     }
 
-
-    public void addRomeToBuffer(ArrayList<Room> roomSet) throws InterruptedException {
+    public void addRomeToBuffer(ArrayList<Room> roomSet) {
         for (Room room: roomSet){
             drawLine(room.boundary[0], room.boundary[1], room.boundary[2], "Y"); // Y means keep Y not change and increase X
             drawLine(room.boundary[0], room.boundary[1], room.boundary[3], "Y");
@@ -433,10 +461,6 @@ public class Game {
                 }
             }
         }
-        /* test here to see add every room directly */
-//        bufferToFinalWordFrame(finalWordFrame);
-//        ter.renderFrame(finalWordFrame);
-//        sleep(5000);
     }
 
     public void drawLine(int start, int end, int keep, String tag) {
@@ -456,27 +480,15 @@ public class Game {
 
     public void bufferToFinalWordFrame(TETile[][] finalWordFrame)  {
 
-//        /* test here*/
-//        for (int i = 0; i < WIDTH; i++) {
-//            for (int j = 0; j < HEIGHT; j++) {
-//                finalWordFrame[i][j] = Tileset.NOTHING;
-//            }
-//        }
-//        ter.renderFrame(finalWordFrame);
-//        /* test above */
-
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < HEIGHT; j++) {
                 TETile t = BufferCharMap.get(buffer[i][j]);
                 finalWordFrame[i][j] = t;
-//                ter.renderFrame(finalWordFrame);
-//                sleep(1);
             }
         }
     }
 
-
-    public  void createHallBetRomes(ArrayList<Room[]> arrangeRoomPairs) throws InterruptedException {
+    public  void createHallBetRomes(ArrayList<Room[]> arrangeRoomPairs) {
         for (Room[] roomPair : arrangeRoomPairs){
             Room r1 = roomPair[0];
             Room r2 = roomPair[1];
@@ -485,11 +497,6 @@ public class Game {
             side = r1.checkWitchSide(relativeDegree);
             Point2D.Double[] poses = r1.linkPosWithOtherRoom(r2);
             linkPos(side, poses[0], poses[1]);
-
-            /* test here to see every pair link directly */
-//            bufferToFinalWordFrame(finalWordFrame);
-//            ter.renderFrame(finalWordFrame);
-//            sleep(5000);
         }
     }
 

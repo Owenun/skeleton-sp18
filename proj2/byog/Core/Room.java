@@ -1,9 +1,10 @@
 package byog.Core;
 
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Room {
+public class Room implements Serializable {
 
     public final int width;
     public final int height;
@@ -15,6 +16,7 @@ public class Room {
     public final int[] boundary;
     public final int[][]corPoses;
 
+    private static final long serialVersionUID = 2123123123123123L;
     public Room(int width, int height, int leftX, int DownY) {
         this.width = width;
         this.height = height;
@@ -86,9 +88,7 @@ public class Room {
 
         int side = checkWitchSide(relativeAngle);
 
-        Point2D.Double[] posAB = calLinkPointBySide(side, otherRoom);
-
-        return posAB;
+        return calLinkPointBySide(side, otherRoom);
 
     }
 
