@@ -3,15 +3,18 @@ package byog.Core;
 import byog.TileEngine.TERenderer;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
-import edu.princeton.cs.algs4.Picture;
+import edu.princeton.cs.introcs.StdDraw;
 
 
 import java.awt.geom.Point2D;
-import java.time.Instant;
-import java.util.*;
-import java.util.logging.Level;
 
-import static java.lang.Thread.sleep;
+import java.util.*;
+
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+
 
 
 public class Game {
@@ -20,12 +23,12 @@ public class Game {
     public static final int WIDTH = 80;
     public static final int HEIGHT = 40;
     public static final int AREA = WIDTH * HEIGHT;
-    public long seed;
+    public Long Seed;
     public Random random;
     public String[][] buffer;
     public TETile[][] finalWordFrame;
     public HashMap<String, TETile> BufferCharMap;
-
+    public int[] heroPos;
 
    public Game(){
 
@@ -34,8 +37,6 @@ public class Game {
        finalWordFrame = new TETile[WIDTH][HEIGHT];
        BufferCharMap = new HashMap<>(10);
        buffer = new String[WIDTH][HEIGHT];
-       seed = Instant.now().toEpochMilli();
-       random = new Random(seed);
 
        for(int i = 0; i < WIDTH; i++) {
            for (int j = 0; j < HEIGHT; j++) {
@@ -49,10 +50,124 @@ public class Game {
 
    }
 
+   public void newGame(Long seed) throws InterruptedException {
+
+       Seed = seed;
+       StringBuilder keyboardStr = new StringBuilder();
+       random = new Random(seed);
+
+       boolean quit = false;
+       generateWord();
+       heroPosInitial();
+       ter.renderFrame(finalWordFrame);
+       String directionCh = "wsad";
+       Character ch = ' ';
+       while (!quit) {
+           // main loop
+
+           boolean mousePress = StdDraw.isMousePressed();
+           boolean keyTyped = StdDraw.hasNextKeyTyped();
+
+           if ( !(mousePress || keyTyped)) continue;
+
+           if (keyTyped) {
+               ch = StdDraw.nextKeyTyped();
+               if (ch.equals(':')) {
+                   if (listenToKeyboard().equals('q')) {
+                       quit = true;
+                       continue;
+                   }
+               }
+               if (directionCh.contains(ch.toString())) {
+                   keyboardStr.append(ch);
+                   boolean NotWall = flashHeroPos(ch);
+                   if (NotWall) {
+                       ter.renderFrame(finalWordFrame);
+                       ter.drawPos(heroPos);
+                   }
+               }
+           }
+           if (mousePress) {
+               int mosX = (int) StdDraw.mouseX();
+               int mosY = (int) StdDraw.mouseY();
+               // calculate mouse x y correspond to which tile
+               TETile tile =  finalWordFrame[mosX][mosY];
+               ter.renderFrame(finalWordFrame);
+               ter.drawMouseTileInfo(tile);
+               ter.drawPos(heroPos);
+           }
+       }
+       System.exit(0);
+
+//       quitAndSave();
+   }
+    public Character listenToKeyboard(){
+        while(true) {
+            if (!StdDraw.hasNextKeyTyped()) continue;
+            return StdDraw.nextKeyTyped();
+        }
+    }
+   public boolean flashHeroPos(Character ch) {
+
+       HashMap<Character, int[]> moveMap = new HashMap<>();
+       moveMap.put('w', new int[] {0, 1});
+       moveMap.put('s', new int[] {0, -1});
+       moveMap.put('a', new int[] {-1, 0});
+       moveMap.put('d', new int[] {1, 0});
+
+       int[] move = moveMap.get(ch);
+       int[] newPos = {heroPos[0] + move[0], heroPos[1] + move[1]};
+       if (!checkIfWall(newPos)) {
+           heroPos = newPos;
+           return true;
+       }
+       return false;
+
+   }
+   public boolean checkIfWall(int[] pos) {
+       return  buffer[pos[0]][pos[1]].equals("#");
+   }
+
+    public void heroPosInitial() {
+
+       heroPos = new int[2];
+       while (true) {
+       int x = random.nextInt(WIDTH);
+       int y = random.nextInt(HEIGHT);
+       if (buffer[x][y].equals( "·")) {
+           heroPos[0] = x;
+           heroPos[1] = y;
+           break;
+        }
+       }
+    }
     /**
      * Method used for playing a fresh game. The game should start from the main menu.
      */
-    public void playWithKeyboard() {
+    public void playWithKeyboard() throws InterruptedException {
+
+//      draw start ui
+//      listen to keepBoard N or L
+//        new for new game, need provide seed and s begin game
+//        l for load game
+        ter.drawBeginUI(false);
+        Character beginCh =  listenToKeyboard();
+        if (beginCh.equals('l')) {
+//            loadGame();
+        }
+        if (beginCh.equals('n')) {
+            ter.drawBeginUI(true);
+            StringBuilder seed = new StringBuilder();
+            Character ch = ' ';
+            while (!ch.equals('s')) {
+
+                if (! StdDraw.hasNextKeyTyped()) continue;
+                ch = StdDraw.nextKeyTyped();
+                seed.append(ch);
+            }
+            seed.deleteCharAt(seed.length() - 1);
+            newGame(Long.parseLong(seed.toString()));
+        }
     }
 
     /**
@@ -67,23 +182,37 @@ public class Game {
      * @param input the input string to feed to your program
      * @return the 2D TETile[][] representing the state of the world
      */
-    public TETile[][] playWithInputString(String input) {
+    public TETile[][] playWithInputString(String input) throws RuntimeException, InterruptedException {
         // TODO: Fill out this method to run the game using the input passed in,
         // and return a 2D tile representation of the world that would have been
         // drawn if the same inputs had been given to playWithKeyboard().
+        Pattern r = Pattern.compile("^([nNlL])(\\d+)([sS]|:[qQ])$");
+        Matcher matcher = r.matcher(input);
+        if ( !matcher.find())  throw new RuntimeException();
+        String begin = matcher.group(1);
+        long seed = Long.parseLong( matcher.group(2));
+        String end = matcher.group(3);
 
-        return null;
+        if (begin.equalsIgnoreCase("n")) {
+            Seed = seed;
+            random = new Random(Seed);
+            generateWord();
+        }
+        if (begin.equalsIgnoreCase("l")) ;
+
+        return finalWordFrame;
     }
 
-    public TETile[][]  playNow() throws InterruptedException {
+    public void generateWord() throws InterruptedException {
 
         ArrayList<Room> roomSet = createRandomRomes();
+
         addRomeToBuffer(roomSet);
 
         ArrayList<Room[]> roomPairInOrder =  arrangeLinkOrderRomes(roomSet);
         createHallBetRomes(roomPairInOrder);
         bufferToFinalWordFrame(finalWordFrame);
-        return finalWordFrame;
+//        return finalWordFrame;
     }
 
     /** roomSet: the room group which need to give link order
@@ -232,7 +361,7 @@ public class Game {
 
         ArrayList<Room> roomSet = new ArrayList<>();
         int curArea = 0;
-        while (curArea < ( AREA / 10) * 4  ){
+        while (curArea < ( AREA / 10) * 5  ){
             Room newRoom = createOneRoom();
 
             boolean roomInWord = Room.inWorld(newRoom);
@@ -257,14 +386,14 @@ public class Game {
         int[] posElements = new int[4];
         int i = 0;
         while (i < 1) {
-            int a = random.nextInt(30);
+            int a = random.nextInt(25);
             if (a > 4) {
                 posElements[i] = a;
                 i++;
             }
         }
         while (i < 2) {
-            int a = random.nextInt(20);
+            int a = random.nextInt(17);
             if (a > 4) {
                 posElements[i] = a;
                 i++;
@@ -305,9 +434,9 @@ public class Game {
             }
         }
         /* test here to see add every room directly */
-        bufferToFinalWordFrame(finalWordFrame);
-        ter.renderFrame(finalWordFrame);
-        sleep(5000);
+//        bufferToFinalWordFrame(finalWordFrame);
+//        ter.renderFrame(finalWordFrame);
+//        sleep(5000);
     }
 
     public void drawLine(int start, int end, int keep, String tag) {
@@ -358,9 +487,9 @@ public class Game {
             linkPos(side, poses[0], poses[1]);
 
             /* test here to see every pair link directly */
-            bufferToFinalWordFrame(finalWordFrame);
-            ter.renderFrame(finalWordFrame);
-            sleep(5000);
+//            bufferToFinalWordFrame(finalWordFrame);
+//            ter.renderFrame(finalWordFrame);
+//            sleep(5000);
         }
     }
 

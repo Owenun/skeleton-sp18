@@ -1,4 +1,5 @@
 import edu.princeton.cs.algs4.Count;
+import edu.princeton.cs.algs4.StdAudio;
 
 import java.util.ArrayList;
 
@@ -47,9 +48,8 @@ public class NBody {
         int count = new In(filename).readInt();
 
         Planet[] planets = NBody.readPlanets(filename, count);
-
         StdDraw.enableDoubleBuffering();
-        String background = "starfield.jpg";
+        String background = "./images/starfield.jpg";
         StdDraw.setScale(-radius, radius);
         StdDraw.picture(0, 0, background);
         StdDraw.show();
@@ -80,7 +80,7 @@ public class NBody {
                 p.draw();
             }
             StdDraw.show();
-            StdDraw.pause(1);
+            StdDraw.pause(10);
 
             timeVar += dt;
         }

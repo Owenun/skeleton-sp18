@@ -34,6 +34,7 @@ public class TERenderer {
         this.yOffset = yOff;
         StdDraw.setCanvasSize(width * TILE_SIZE, height * TILE_SIZE);
         Font font = new Font("Monaco", Font.BOLD, TILE_SIZE - 2);
+
         StdDraw.setFont(font);      
         StdDraw.setXscale(0, width);
         StdDraw.setYscale(0, height);
@@ -84,6 +85,8 @@ public class TERenderer {
      * @param world the 2D TETile[][] array to render
      */
     public void renderFrame(TETile[][] world) {
+        Font font = new Font("Monaco", Font.BOLD, TILE_SIZE - 2);
+        StdDraw.setFont(font);
         int numXTiles = world.length;
         int numYTiles = world[0].length;
         StdDraw.clear(new Color(0, 0, 0));
@@ -96,6 +99,41 @@ public class TERenderer {
                 world[x][y].draw(x + xOffset, y + yOffset);
             }
         }
+        StdDraw.show();
+    }
+    public void drawBeginUI(boolean newGame) {
+
+        StdDraw.clear(StdDraw.BLACK);
+        Font bigFont = new Font("Monaco", Font.BOLD, 30);
+        Font fonts = new Font("Monaco", Font.BOLD, 20);
+
+
+        StdDraw.clear(StdDraw.BLACK);
+        StdDraw.setFont(bigFont);
+        StdDraw.setPenColor(Color.WHITE);
+        int midX = width / 2;
+        int midY = height / 2;
+        StdDraw.text(midX, (double) (2 * height) / 3 , "CS 61B Game");
+        StdDraw.setFont(fonts);
+        if (newGame) {
+            StdDraw.text( midX, midY,"Please Enter Your Seed and End with S");
+        } else {
+            StdDraw.text(midX, midY, "New Game: N");
+            StdDraw.text(midX, midY - 2, "Load Game: L");
+        }
+        StdDraw.show();
+    }
+
+    public void drawPos(int[] Pos) {
+        StdDraw.setPenColor(Color.WHITE);
+        StdDraw.text(Pos[0] + 0.5, Pos[1] + 0.5, Character.toString('@'));
+        StdDraw.show();
+    }
+    public void drawMouseTileInfo(TETile tile) {
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.filledRectangle(1 + 0.5, height -3 + 0.5, 3, 0.5);
+        StdDraw.setPenColor(Color.BLACK);
+        StdDraw.textLeft(1 + 0.5 ,  height - 3 + 0.5 , tile.description());
         StdDraw.show();
     }
 }
