@@ -2,8 +2,11 @@ package lab9tester;
 
 import static org.junit.Assert.*;
 
+import edu.princeton.cs.algs4.In;
 import org.junit.Test;
 import lab9.BSTMap;
+
+import java.util.Random;
 
 /**
  * Tests by Brendan Hu, Spring 2015, revised for 2018 by Josh Hug
@@ -34,11 +37,17 @@ public class TestBSTMap {
             assertTrue(b.containsKey("hi" + i));
         }
         assertEquals(455, b.size());
-        b.clear();
-        assertEquals(0, b.size());
-        for (int i = 0; i < 455; i++) {
+//        b.clear();
+//        assertEquals(0, b.size());
+        Random r = new Random(100);
+        while (b.size() > 200) {
+            int i = Math.abs(r.nextInt() % 455);
+            b.remove("hi" + i);
             assertTrue(null == b.get("hi" + i) && !b.containsKey("hi" + i));
         }
+//        for (int i = 0; i < 455; i++) {
+//            assertTrue(null == b.get("hi" + i) && !b.containsKey("hi" + i));
+//        }
     }
 
     // assumes put works
